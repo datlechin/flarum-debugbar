@@ -48,14 +48,6 @@ php flarum debugbar:publish
 | Mail       | Emails sent/queued during the request                                     |
 | Extensions | All enabled extensions with versions                                      |
 
-### Additional Features
-
-- **AJAX Tracking** — Flarum SPA navigation (API calls via `fetch`) are captured and displayed in a dedicated AJAX tab
-- **Request History** — Browse past requests via the OpenHandler (clock icon in the toolbar)
-- **Dark Theme** — Automatically matches your browser's light/dark preference
-- **Auto-hide Empty Tabs** — Tabs with no data (e.g., Cache 0, Mail 0) are hidden
-- **Storage Auto-prune** — Old request data is automatically cleaned up after 24 hours
-
 ### Console Commands
 
 ```sh
