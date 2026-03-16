@@ -6,6 +6,10 @@ Integrates [PHP Debugbar](https://github.com/php-debugbar/php-debugbar) v3.5 int
 
 > **Warning**: This is a development tool. Never enable debug mode on production sites.
 
+![Overview](screenshots/overview.png)
+
+![Queries](screenshots/queries.png)
+
 ## Installation
 
 ```sh
