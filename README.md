@@ -1,6 +1,6 @@
 # Debugbar for Flarum
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/datlechin/flarum-debugbar.svg)](https://packagist.org/packages/datlechin/flarum-debugbar)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/datlechin/flarum-debugbar.svg)](https://packagist.org/packages/datlechin/flarum-debugbar) [![Total Downloads](https://img.shields.io/packagist/dt/datlechin/flarum-debugbar.svg)](https://packagist.org/packages/datlechin/flarum-debugbar)
 
 Integrates [PHP Debugbar](https://github.com/php-debugbar/php-debugbar) into Flarum 2.x, providing a powerful in-browser debug toolbar for development. Inspect SQL queries, events, routes, authentication, cache operations, mail, and more.
 
