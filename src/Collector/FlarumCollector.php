@@ -17,13 +17,17 @@ class FlarumCollector extends DataCollector implements Renderable
 
     public function collect(): array
     {
-        $extensions = $this->container->make(ExtensionManager::class);
-        $enabled = $extensions->getEnabledExtensions();
+        try {
+            $extensions = $this->container->make(ExtensionManager::class);
+            $enabled = $extensions->getEnabledExtensions();
 
-        $extensionList = [];
+            $extensionList = [];
 
-        foreach ($enabled as $extension) {
-            $extensionList[] = $extension->getId();
+            foreach ($enabled as $extension) {
+                $extensionList[] = $extension->getId();
+            }
+        } catch (\Throwable) {
+            $extensionList = [];
         }
 
         return [

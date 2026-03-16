@@ -67,7 +67,11 @@ class SettingsCollector extends DataCollector implements Renderable
 
     protected function truncateValue(mixed $value): string
     {
-        $str = (string) $value;
+        if (is_array($value) || is_object($value)) {
+            $str = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '[unencodable]';
+        } else {
+            $str = (string) $value;
+        }
 
         if (strlen($str) > 200) {
             return substr($str, 0, 200).'... ('.strlen($str).' chars)';

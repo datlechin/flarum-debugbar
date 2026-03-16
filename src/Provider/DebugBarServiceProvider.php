@@ -125,7 +125,9 @@ class DebugBarServiceProvider extends AbstractServiceProvider
         }
 
         if (! file_exists($destination)) {
-            @symlink($source, $destination);
+            if (! @symlink($source, $destination)) {
+                error_log("[flarum-debugbar] Failed to create symlink: {$destination} → {$source}");
+            }
         }
     }
 }

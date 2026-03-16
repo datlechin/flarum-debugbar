@@ -17,13 +17,16 @@ class TracingCacheRepository extends Repository
 
     public function get($key, $default = null): mixed
     {
-        $value = parent::get($key, $default);
+        $sentinel = new \stdClass();
+        $value = parent::get($key, $sentinel);
 
-        if ($value === null || $value === $default) {
+        if ($value === $sentinel) {
             $this->collector->recordMiss($key);
-        } else {
-            $this->collector->recordHit($key, $value);
+
+            return is_callable($default) ? $default() : $default;
         }
+
+        $this->collector->recordHit($key, $value);
 
         return $value;
     }
@@ -33,7 +36,7 @@ class TracingCacheRepository extends Repository
         $values = parent::many($keys);
 
         foreach ($values as $key => $value) {
-            if ($value === null) {
+            if ($value === null && ! $this->has($key)) {
                 $this->collector->recordMiss($key);
             } else {
                 $this->collector->recordHit($key, $value);

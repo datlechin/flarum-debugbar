@@ -24,11 +24,10 @@ class AuthCollector extends DataCollector implements Renderable
 
         try {
             $actor = RequestUtil::getActor($this->request);
+            $groups = $actor->groups->pluck('name_singular', 'id')->toArray();
         } catch (\Throwable) {
             return ['actor' => 'Unable to resolve'];
         }
-
-        $groups = $actor->groups->pluck('name_singular', 'id')->toArray();
 
         $data = [
             'actor_id' => $actor->id ?? 0,
