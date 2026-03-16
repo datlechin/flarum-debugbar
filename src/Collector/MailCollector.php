@@ -21,6 +21,7 @@ class MailCollector extends DataCollector implements Renderable
             'subject' => $message->getSubject() ?? '(no subject)',
             'to' => $this->formatAddresses($message->getTo()),
             'from' => $this->formatAddresses($message->getFrom()),
+            'time' => microtime(true),
         ];
     }
 
@@ -33,12 +34,14 @@ class MailCollector extends DataCollector implements Renderable
 
         if ($lastIndex >= 0 && $this->emails[$lastIndex]['status'] === 'sending') {
             $this->emails[$lastIndex]['status'] = 'sent';
+            $this->emails[$lastIndex]['time'] = microtime(true);
         } else {
             $this->emails[] = [
                 'status' => 'sent',
                 'subject' => $message->getSubject() ?? '(no subject)',
                 'to' => $this->formatAddresses($message->getTo()),
                 'from' => $this->formatAddresses($message->getFrom()),
+                'time' => microtime(true),
             ];
         }
     }
@@ -67,7 +70,7 @@ class MailCollector extends DataCollector implements Renderable
                 'message_html' => null,
                 'is_string' => true,
                 'label' => $label,
-                'time' => microtime(true),
+                'time' => $email['time'],
             ];
         }
 

@@ -1,8 +1,12 @@
 {
     "name": "datlechin/flarum-debugbar",
-    "description": "Integrate PHP Debugbar into Flarum for          development debugging",
+    "description": "Integrate PHP Debugbar into Flarum for development debugging",
     "keywords": [
-        "flarum"
+        "flarum",
+        "debugbar",
+        "debug",
+        "profiler",
+        "development"
     ],
     "type": "flarum-extension",
     "license": "MIT",

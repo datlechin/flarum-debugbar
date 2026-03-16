@@ -2,12 +2,15 @@
 
 namespace Datlechin\FlarumDebugbar\Collector;
 
+use Datlechin\FlarumDebugbar\Collector\Concerns\ResolvesHandlerName;
 use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable;
 use Psr\Http\Message\ServerRequestInterface;
 
 class ApiCollector extends DataCollector implements Renderable
 {
+    use ResolvesHandlerName;
+
     protected ?ServerRequestInterface $request = null;
 
     public function setRequest(ServerRequestInterface $request): void
@@ -69,51 +72,6 @@ class ApiCollector extends DataCollector implements Renderable
         }
 
         return $data;
-    }
-
-    protected function resolveHandlerName(mixed $handler): string
-    {
-        if (is_string($handler)) {
-            return $handler;
-        }
-
-        if ($handler instanceof \Closure) {
-            try {
-                $ref = new \ReflectionFunction($handler);
-                $uses = $ref->getStaticVariables();
-
-                // toApiResource(): has $resourceClass + $endpointName
-                if (isset($uses['resourceClass'])) {
-                    $name = class_basename($uses['resourceClass']);
-
-                    return isset($uses['endpointName'])
-                        ? "{$name}::{$uses['endpointName']}"
-                        : $name;
-                }
-
-                // toController(): has $controller
-                if (isset($uses['controller'])) {
-                    $ctrl = $uses['controller'];
-
-                    if (is_string($ctrl)) {
-                        return $ctrl;
-                    }
-
-                    if (is_object($ctrl)) {
-                        return $ctrl::class;
-                    }
-                }
-            } catch (\Throwable) {
-            }
-
-            return 'Closure';
-        }
-
-        if (is_object($handler)) {
-            return $handler::class;
-        }
-
-        return 'unknown';
     }
 
     public function getName(): string

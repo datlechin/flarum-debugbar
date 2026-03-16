@@ -30,7 +30,6 @@ class FlarumCollector extends DataCollector implements Renderable
             'flarum_version' => Application::VERSION,
             'php_version' => PHP_VERSION,
             'base_url' => (string) $this->container->make('flarum.config')->url(),
-            'debug_mode' => 'ON',
             'database_driver' => $this->getDatabaseDriver(),
             'queue_driver' => $this->getQueueDriver(),
             'session_driver' => $this->getSessionDriver(),

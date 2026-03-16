@@ -42,16 +42,4 @@ class TracingCacheRepository extends Repository
         return parent::forget($key);
     }
 
-    public function has($key): bool
-    {
-        $result = parent::has($key);
-
-        if ($result) {
-            $this->collector->recordHit($key, null);
-        } else {
-            $this->collector->recordMiss($key);
-        }
-
-        return $result;
-    }
 }

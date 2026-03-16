@@ -30,7 +30,7 @@ class ClearStorageCommand extends AbstractCommand
             return 0;
         }
 
-        $files = glob($storagePath.'/*.json');
+        $files = glob($storagePath.'/*.json') ?: [];
         $count = count($files);
 
         foreach ($files as $file) {

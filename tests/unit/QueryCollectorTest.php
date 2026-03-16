@@ -45,7 +45,7 @@ class QueryCollectorTest extends TestCase
         $data = $collector->collect();
 
         $this->assertEquals(1, $data['nb_statements']);
-        $this->assertEquals(5.2, $data['statements'][0]['duration']);
+        $this->assertEquals(0.0052, $data['statements'][0]['duration']);
         $this->assertStringContainsString('SELECT', $data['statements'][0]['sql']);
     }
 

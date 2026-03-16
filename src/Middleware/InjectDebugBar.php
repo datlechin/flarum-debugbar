@@ -6,6 +6,7 @@ use Datlechin\FlarumDebugbar\Collector\AuthCollector;
 use Datlechin\FlarumDebugbar\Collector\RouteCollector;
 use Datlechin\FlarumDebugbar\DebugBarFactory;
 use DebugBar\DebugBar;
+use Flarum\Foundation\Config;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -114,6 +115,7 @@ CSS;
 
     public function __construct(
         protected DebugBarFactory $factory,
+        protected Config $config,
     ) {
     }
 
@@ -196,7 +198,8 @@ CSS;
         $renderer->addInlineAssets([self::FLARUM_THEME_CSS], [], []);
 
         if ($this->debugbar->getStorage()) {
-            $renderer->setOpenHandlerUrl('/debugbar/open');
+            $basePath = rtrim($this->config->url()->getPath(), '/');
+            $renderer->setOpenHandlerUrl($basePath . '/debugbar/open');
         }
 
         $debugbarHead = $renderer->renderHead();

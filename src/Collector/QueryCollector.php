@@ -14,7 +14,7 @@ class QueryCollector extends DataCollector implements Renderable
     {
         $this->queries[] = [
             'sql' => $event->toRawSql(),
-            'duration' => $event->time,
+            'duration' => $event->time / 1000,
             'duration_str' => $this->getDataFormatter()->formatDuration($event->time / 1000),
             'connection' => $event->connectionName,
             'is_success' => true,
@@ -32,8 +32,8 @@ class QueryCollector extends DataCollector implements Renderable
         return [
             'nb_statements' => count($this->queries),
             'nb_failed_statements' => 0,
-            'accumulated_duration' => $totalTime / 1000,
-            'accumulated_duration_str' => $this->getDataFormatter()->formatDuration($totalTime / 1000),
+            'accumulated_duration' => $totalTime,
+            'accumulated_duration_str' => $this->getDataFormatter()->formatDuration($totalTime),
             'statements' => $this->queries,
         ];
     }

@@ -83,7 +83,8 @@ class DebugBarFactory
     {
         try {
             $this->debugbar->addCollector($factory());
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            error_log('[flarum-debugbar] ' . $e->getMessage());
         }
     }
 
@@ -93,7 +94,8 @@ class DebugBarFactory
             if ($this->container->bound($class)) {
                 $this->debugbar->addCollector($this->container->make($class));
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            error_log('[flarum-debugbar] ' . $e->getMessage());
         }
     }
 }
