@@ -62,7 +62,9 @@ class DebugbarHelper
             return;
         }
 
-        static::$debugbar['messages']->addMessage($message, $label);
+        /** @var \DebugBar\DataCollector\MessagesCollector $collector */
+        $collector = static::$debugbar['messages'];
+        $collector->addMessage($message, $label);
     }
 
     public static function startMeasure(string $name, ?string $label = null): void
@@ -72,7 +74,9 @@ class DebugbarHelper
         }
 
         try {
-            static::$debugbar['time']->startMeasure($name, $label ?? $name);
+            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
+            $collector = static::$debugbar['time'];
+            $collector->startMeasure($name, $label ?? $name);
         } catch (\Throwable) {
         }
     }
@@ -84,7 +88,9 @@ class DebugbarHelper
         }
 
         try {
-            static::$debugbar['time']->stopMeasure($name);
+            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
+            $collector = static::$debugbar['time'];
+            $collector->stopMeasure($name);
         } catch (\Throwable) {
         }
     }
@@ -95,6 +101,8 @@ class DebugbarHelper
             return;
         }
 
-        static::$debugbar['exceptions']->addThrowable($e);
+        /** @var \DebugBar\DataCollector\ExceptionsCollector $collector */
+        $collector = static::$debugbar['exceptions'];
+        $collector->addThrowable($e);
     }
 }

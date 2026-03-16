@@ -125,8 +125,11 @@ CSS;
             return $handler->handle($request);
         }
 
-        $this->debugbar['messages']->addMessage('Route: '.$request->getUri()->getPath());
+        /** @var \DebugBar\DataCollector\MessagesCollector $messages */
+        $messages = $this->debugbar['messages'];
+        $messages->addMessage('Route: '.$request->getUri()->getPath());
 
+        /** @var \DebugBar\DataCollector\TimeDataCollector $time */
         $time = $this->debugbar['time'];
 
         $time->startMeasure('forum.request', 'Forum Request');

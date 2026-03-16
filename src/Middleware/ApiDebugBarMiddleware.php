@@ -44,12 +44,17 @@ class ApiDebugBarMiddleware implements MiddlewareInterface
         $method = $request->getMethod();
         $measureId = 'api.'.md5($method.$path.microtime());
 
-        $this->debugbar['messages']->addMessage("API: {$method} {$path}");
-        $this->debugbar['time']->startMeasure($measureId, "API {$method} {$path}");
+        /** @var \DebugBar\DataCollector\MessagesCollector $messages */
+        $messages = $this->debugbar['messages'];
+        $messages->addMessage("API: {$method} {$path}");
+
+        /** @var \DebugBar\DataCollector\TimeDataCollector $time */
+        $time = $this->debugbar['time'];
+        $time->startMeasure($measureId, "API {$method} {$path}");
 
         $response = $handler->handle($request);
 
-        try { $this->debugbar['time']->stopMeasure($measureId); } catch (\Throwable) {}
+        try { $time->stopMeasure($measureId); } catch (\Throwable) {}
 
         // Only send debug headers for external AJAX requests, not internal API calls
         if (self::$forumRequestActive) {

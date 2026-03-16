@@ -23,10 +23,10 @@ return [
                     ->register(Provider\DebugBarServiceProvider::class),
 
                 (new Extend\Middleware('forum'))
-                    ->insertAfter('flarum.forum.route_resolver', Middleware\InjectDebugBar::class),
+                    ->insertAfter('flarum.forum.route_resolver', Middleware\InjectDebugBar::class), // @phpstan-ignore argument.type
 
                 (new Extend\Middleware('admin'))
-                    ->insertAfter('flarum.admin.route_resolver', Middleware\InjectDebugBar::class),
+                    ->insertAfter('flarum.admin.route_resolver', Middleware\InjectDebugBar::class), // @phpstan-ignore argument.type
 
                 (new Extend\Middleware('api'))
                     ->add(Middleware\ApiDebugBarMiddleware::class),
