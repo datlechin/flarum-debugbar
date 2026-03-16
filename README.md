@@ -98,6 +98,7 @@ All functionality is wrapped in `Extend\Conditional` and only activates when `de
 
 ## Links
 
-- [PHP Debugbar](https://github.com/php-debugbar/php-debugbar)
-- [Flarum](https://flarum.org)
+- [Flarum](https://flarum.org/d/38921)
+- [GitHub](https://github.com/datlechin/flarum-debugbar)
 - [Packagist](https://packagist.org/packages/datlechin/flarum-debugbar)
+- [PHP Debugbar](https://github.com/php-debugbar/php-debugbar)
