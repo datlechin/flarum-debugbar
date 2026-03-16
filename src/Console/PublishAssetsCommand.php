@@ -17,7 +17,7 @@ class PublishAssetsCommand extends AbstractCommand
     {
         $this
             ->setName('debugbar:publish')
-            ->setDescription('Publish PHP Debugbar assets to the public directory');
+            ->setDescription('Publish Debugbar assets to the public directory');
     }
 
     protected function fire(): int
@@ -27,7 +27,7 @@ class PublishAssetsCommand extends AbstractCommand
         );
 
         if (! $source) {
-            $this->error('PHP Debugbar resources not found. Is php-debugbar/php-debugbar installed?');
+            $this->error('Debugbar resources not found. Is php-debugbar/php-debugbar installed?');
 
             return 1;
         }

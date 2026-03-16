@@ -1,6 +1,6 @@
 {
     "name": "datlechin/flarum-debugbar",
-    "description": "Integrate PHP Debugbar into Flarum for development debugging",
+    "description": "Integrate Debugbar into Flarum for development debugging",
     "keywords": [
         "flarum",
         "debugbar",
@@ -28,7 +28,7 @@
     },
     "extra": {
         "flarum-extension": {
-            "title": "PHP Debugbar",
+            "title": "Debugbar",
             "category": "feature",
             "icon": {
                 "name": "fas fa-bug",
