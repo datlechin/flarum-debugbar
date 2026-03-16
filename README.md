@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/datlechin/flarum-debugbar.svg)](https://packagist.org/packages/datlechin/flarum-debugbar)
 
-Integrates [PHP Debugbar](https://github.com/php-debugbar/php-debugbar) into Flarum 2.x, providing a powerful in-browser debug toolbar for development. Inspect SQL queries, events, routes, authentication, cache operations, mail, and more — all without leaving your browser.
+Integrates [PHP Debugbar](https://github.com/php-debugbar/php-debugbar) into Flarum 2.x, providing a powerful in-browser debug toolbar for development. Inspect SQL queries, events, routes, authentication, cache operations, mail, and more.
 
 > **Warning**: This is a development tool. Never enable debug mode on production sites.
 
@@ -77,16 +77,7 @@ DebugbarHelper::stopMeasure('my-operation');
 DebugbarHelper::addException($e);
 ```
 
-All methods are safe to call even when the debugbar is disabled — they silently no-op.
-
-## How It Works
-
-The extension registers PSR-15 middleware on the `forum`, `admin`, and `api` stacks:
-
-- **Forum/Admin**: Injects the debugbar HTML toolbar into page responses
-- **API**: Sends debug data as HTTP response headers for AJAX tracking
-
-All functionality is wrapped in `Extend\Conditional` and only activates when `debug => true` in `config.php`. When debug mode is off, the extension has zero overhead.
+All methods are safe to call even when the debugbar is disabled, they silently no-op.
 
 ## Links
 
