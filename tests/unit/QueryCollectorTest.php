@@ -10,6 +10,14 @@ use PHPUnit\Framework\TestCase;
 
 class QueryCollectorTest extends TestCase
 {
+    private function makeEvent(string $sql, array $bindings, float $time, string $connectionName = 'sqlite'): QueryExecuted
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('getName')->willReturn($connectionName);
+
+        return new QueryExecuted($sql, $bindings, $time, $connection);
+    }
+
     #[Test]
     public function it_collects_no_queries_by_default(): void
     {
@@ -25,28 +33,14 @@ class QueryCollectorTest extends TestCase
     {
         $collector = new QueryCollector();
 
-        $connection = $this->createMock(Connection::class);
-        $connection->method('getName')->willReturn('sqlite');
-
-        $grammar = $this->createMock(\Illuminate\Database\Query\Grammars\Grammar::class);
-        $grammar->method('substituteBindingsIntoRawSql')->willReturn("SELECT * FROM users WHERE id = '1'");
-
-        $processor = $this->createMock(\Illuminate\Database\Query\Processors\Processor::class);
-
-        $builder = $this->createMock(\Illuminate\Database\Query\Builder::class);
-        $builder->method('getGrammar')->willReturn($grammar);
-
-        $connection->method('query')->willReturn($builder);
-        $connection->method('prepareBindings')->willReturn([1]);
-
-        $event = new QueryExecuted('SELECT * FROM users WHERE id = ?', [1], 5.2, $connection);
+        $event = $this->makeEvent('SELECT * FROM users WHERE id = ?', [1], 5.2);
         $collector->onQueryExecuted($event);
 
         $data = $collector->collect();
 
         $this->assertEquals(1, $data['nb_statements']);
         $this->assertEquals(0.0052, $data['statements'][0]['duration']);
-        $this->assertStringContainsString('SELECT', $data['statements'][0]['sql']);
+        $this->assertEquals('SELECT * FROM users WHERE id = ?', $data['statements'][0]['sql']);
     }
 
     #[Test]
@@ -66,5 +60,45 @@ class QueryCollectorTest extends TestCase
         $this->assertArrayHasKey('queries', $widgets);
         $this->assertArrayHasKey('queries:badge', $widgets);
         $this->assertEquals('database', $widgets['queries']['icon']);
+    }
+
+    #[Test]
+    public function it_detects_duplicate_templates_with_different_bindings(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [1], 1.0));
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [2], 1.0));
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [3], 1.0));
+
+        $data = $collector->collect();
+
+        $this->assertEquals(3, $data['nb_duplicate_statements']);
+    }
+
+    #[Test]
+    public function it_detects_no_duplicates_for_unique_queries(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [1], 1.0));
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM posts WHERE id = ?', [1], 1.0));
+
+        $data = $collector->collect();
+
+        $this->assertEquals(0, $data['nb_duplicate_statements']);
+    }
+
+    #[Test]
+    public function it_scopes_duplicate_detection_per_connection(): void
+    {
+        $collector = new QueryCollector();
+
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [1], 1.0, 'sqlite'));
+        $collector->onQueryExecuted($this->makeEvent('SELECT * FROM users WHERE id = ?', [2], 1.0, 'mysql'));
+
+        $data = $collector->collect();
+
+        $this->assertEquals(0, $data['nb_duplicate_statements']);
     }
 }

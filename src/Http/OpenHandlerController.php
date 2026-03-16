@@ -3,6 +3,7 @@
 namespace Datlechin\FlarumDebugbar\Http;
 
 use DebugBar\DebugBar;
+use DebugBar\DebugBarException;
 use DebugBar\OpenHandler;
 use Flarum\Http\RequestUtil;
 use Laminas\Diactoros\Response\JsonResponse;
@@ -27,8 +28,12 @@ class OpenHandlerController implements RequestHandlerInterface
 
         $queryParams = $request->getQueryParams();
 
-        // OpenHandler expects an array with 'op' key
-        $result = $openHandler->handle($queryParams, false, false);
+        try {
+            // OpenHandler expects an array with 'op' key
+            $result = $openHandler->handle($queryParams, false, false);
+        } catch (DebugBarException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        }
 
         $data = json_decode($result, true);
 

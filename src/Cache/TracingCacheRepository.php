@@ -28,11 +28,35 @@ class TracingCacheRepository extends Repository
         return $value;
     }
 
+    public function many(array $keys)
+    {
+        $values = parent::many($keys);
+
+        foreach ($values as $key => $value) {
+            if ($value === null) {
+                $this->collector->recordMiss($key);
+            } else {
+                $this->collector->recordHit($key, $value);
+            }
+        }
+
+        return $values;
+    }
+
     public function put($key, $value, $ttl = null)
     {
         $this->collector->recordWrite($key);
 
         return parent::put($key, $value, $ttl);
+    }
+
+    public function putMany(array $values, $ttl = null)
+    {
+        foreach (array_keys($values) as $key) {
+            $this->collector->recordWrite($key);
+        }
+
+        return parent::putMany($values, $ttl);
     }
 
     public function forget($key)
