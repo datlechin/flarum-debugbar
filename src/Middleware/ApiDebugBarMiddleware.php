@@ -91,7 +91,26 @@ class ApiDebugBarMiddleware implements MiddlewareInterface
     protected function addDebugHeaders(ResponseInterface $response): ResponseInterface
     {
         try {
-            $headers = $this->debugbar->getDataAsHeaders('phpdebugbar', 4096, 250000);
+            // If storage is available, collect and store the data so the JS
+            // open handler can retrieve it. Only send a small request-id header
+            // instead of the full data — avoids overflowing nginx buffer limits.
+            if ($this->debugbar->getStorage()) {
+                $this->debugbar->collect();
+                $this->debugbar->getStorage()->save(
+                    $this->debugbar->getCurrentRequestId(),
+                    $this->debugbar->getData()
+                );
+
+                $response = $response->withHeader(
+                    'phpdebugbar-id',
+                    $this->debugbar->getCurrentRequestId()
+                );
+
+                return $response;
+            }
+
+            // Fallback: no storage, send data in headers with a safe limit
+            $headers = $this->debugbar->getDataAsHeaders('phpdebugbar', 4096, 4096);
 
             foreach ($headers as $name => $value) {
                 $response = $response->withHeader($name, $value);
