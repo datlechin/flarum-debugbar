@@ -1,6 +1,6 @@
 {
     "name": "datlechin/flarum-debugbar",
-    "description": "Integrate Debugbar into Flarum for development debugging",
+    "description": "A development debug bar for Flarum: queries, timeline, events, cache, mail and more.",
     "keywords": [
         "flarum",
         "debugbar",
@@ -11,8 +11,8 @@
     "type": "flarum-extension",
     "license": "MIT",
     "require": {
-        "flarum/core": "^2.0",
-        "php-debugbar/php-debugbar": "^3.5"
+        "php": "^8.2",
+        "flarum/core": "^2.0"
     },
     "authors": [
         {
@@ -38,18 +38,18 @@
         },
         "flarum-cli": {
             "modules": {
-                "admin": false,
-                "forum": false,
-                "js": false,
-                "jsCommon": false,
-                "css": false,
-                "locale": false,
+                "admin": true,
+                "forum": true,
+                "js": true,
+                "jsCommon": true,
+                "css": true,
+                "locale": true,
                 "gitConf": true,
                 "githubActions": true,
-                "prettier": false,
-                "typescript": false,
+                "prettier": true,
+                "typescript": true,
                 "bundlewatch": false,
-                "frontendTesting": false,
+                "frontendTesting": true,
                 "backendTesting": true,
                 "phpstan": true,
                 "editorConfig": true,
