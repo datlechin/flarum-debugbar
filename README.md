@@ -31,6 +31,18 @@ Enable the extension in the admin panel, then make sure debug mode is on in `con
 
 The bar appears for administrators only. There is nothing to publish and nothing to symlink: its assets are compiled through Flarum's own asset pipeline like any other extension's.
 
+### Upgrading from 1.0.x
+
+Nothing to do, but two things have gone.
+
+`php flarum debugbar:publish` no longer exists. It existed to repair a symlink at `public/assets/debugbar`, pointing into the old PHP Debugbar package's resources. That symlink is now unused — nothing reads it and it is harmless — but if you would rather not leave it behind:
+
+```sh
+rm public/assets/debugbar
+```
+
+`Datlechin\FlarumDebugbar\DebugbarHelper` has been replaced by the `Debugbar` service. If you called it from your own extension, see [Using it from your own extension](#using-it-from-your-own-extension) — the methods have the same names and now come from the container instead of a static.
+
 ## Panels
 
 | Panel | What it shows |

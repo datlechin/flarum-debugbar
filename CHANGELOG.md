@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 - 2026-08-27
 
 Rewritten. The bar is now a Flarum frontend rather than a third-party toolbar injected into the page, and the `php-debugbar/php-debugbar` dependency is gone.
 
@@ -64,8 +64,9 @@ Rendering the data in Flarum's own frontend removes all three by construction.
 ### Removed
 
 - The `php-debugbar/php-debugbar` dependency.
-- `debugbar:publish`, and the symlink into `public/assets` that it existed to repair.
+- `debugbar:publish`, and the symlink into `public/assets` that it existed to repair. An existing symlink is left behind by the upgrade; nothing reads it, and `rm public/assets/debugbar` is safe.
+- `DebugbarHelper`, replaced by the container-bound `Debugbar` service. The methods have the same names.
 
-## 0.1.x
+## 1.0.x
 
 Integration of PHP Debugbar 3.5 into Flarum 2.x.
