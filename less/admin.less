@@ -1,0 +1,68 @@
+@import 'common.less';
+
+// -----------------------------------------------------------------------------
+// The settings page
+//
+// The page itself is core's `ExtensionPage`: the two entries below are the only
+// controls it does not already know how to draw. They sit inside its `<Form>`,
+// so they inherit its rhythm and only need to describe themselves.
+// -----------------------------------------------------------------------------
+
+// `InfoTile` is built for an empty state: a large centred icon above its text,
+// with room to breathe. This is a one-line status, so it reads across instead
+// — same component, same tokens, a third of the height.
+//
+// Scoped to `.ExtensionPage-body` and qualified with `.InfoTile` to outrank
+// core's `.ExtensionPage-body .InfoTile { padding: 4rem 0 }`, which is what
+// gives an empty state its height and would otherwise give this one 128px of
+// vertical padding around a single line of text.
+.ExtensionPage-body .InfoTile.DebugbarNotice {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+  row-gap: 0;
+  column-gap: 12px;
+
+  padding: 12px 14px;
+  border-radius: var(--border-radius);
+  background: var(--control-bg);
+
+  font-size: 0.94rem;
+
+  .icon {
+    font-size: 1.1rem;
+  }
+}
+
+.DebugbarNotice {
+  &--on .icon {
+    color: var(--control-success-color);
+  }
+
+  &--off .icon {
+    color: var(--control-warning-color);
+  }
+}
+
+.DebugbarCollectorSettings-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+
+  display: grid;
+  gap: 8px;
+
+  // Ten switches in one column is a long scroll for what is really a single
+  // choice; two columns keep the whole set in view at once.
+  @media @tablet-up {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+}
+
+.DebugbarStoredProfiles {
+  .Button {
+    margin-top: 8px;
+  }
+}

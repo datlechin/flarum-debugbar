@@ -1,115 +1,90 @@
 <?php
 
+/*
+ * This file is part of datlechin/flarum-debugbar.
+ *
+ * Copyright (c) 2026 Ngo Quoc Dat.
+ *
+ * For the full copyright and license information, please view the LICENSE.md
+ * file that was distributed with this source code.
+ */
+
 namespace Datlechin\FlarumDebugbar\Collector;
 
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-class CacheCollector extends DataCollector implements Renderable
+/**
+ * Reads and writes against the cache.
+ *
+ * Fed by {@see \Datlechin\FlarumDebugbar\Cache\TracingStore}, which wraps the
+ * store rather than the repository so that every path into the cache is seen —
+ * including `increment()` and `forever()`, which the repository delegates
+ * straight through.
+ */
+class CacheCollector implements CollectorInterface
 {
+    public const HIT = 'hit';
+    public const MISS = 'miss';
+    public const WRITE = 'write';
+    public const FORGET = 'forget';
+    public const FLUSH = 'flush';
+
+    protected const LIMIT = 500;
+
+    /**
+     * @var list<array<string, mixed>>
+     */
     protected array $operations = [];
 
-    protected int $hits = 0;
+    /**
+     * @var array<string, int>
+     */
+    protected array $totals = [
+        self::HIT => 0,
+        self::MISS => 0,
+        self::WRITE => 0,
+        self::FORGET => 0,
+        self::FLUSH => 0,
+    ];
 
-    protected int $misses = 0;
+    protected int $dropped = 0;
 
-    protected int $writes = 0;
-
-    protected int $deletes = 0;
-
-    public function recordHit(string $key, mixed $value): void
-    {
-        $this->hits++;
-        $this->operations[] = [
-            'type' => 'hit',
-            'key' => $key,
-            'time' => microtime(true),
-        ];
-    }
-
-    public function recordMiss(string $key): void
-    {
-        $this->misses++;
-        $this->operations[] = [
-            'type' => 'miss',
-            'key' => $key,
-            'time' => microtime(true),
-        ];
-    }
-
-    public function recordWrite(string $key): void
-    {
-        $this->writes++;
-        $this->operations[] = [
-            'type' => 'write',
-            'key' => $key,
-            'time' => microtime(true),
-        ];
-    }
-
-    public function recordDelete(string $key): void
-    {
-        $this->deletes++;
-        $this->operations[] = [
-            'type' => 'delete',
-            'key' => $key,
-            'time' => microtime(true),
-        ];
-    }
-
-    public function collect(): array
-    {
-        $messages = [];
-
-        foreach ($this->operations as $op) {
-            $label = match ($op['type']) {
-                'hit' => 'info',
-                'miss' => 'warning',
-                'write' => 'debug',
-                'delete' => 'error',
-                default => 'info',
-            };
-
-            $prefix = strtoupper($op['type']);
-
-            $messages[] = [
-                'message' => "[{$prefix}] {$op['key']}",
-                'message_html' => null,
-                'is_string' => true,
-                'label' => $label,
-                'time' => $op['time'],
-            ];
-        }
-
-        return [
-            'count' => count($this->operations),
-            'hits' => $this->hits,
-            'misses' => $this->misses,
-            'writes' => $this->writes,
-            'deletes' => $this->deletes,
-            'messages' => $messages,
-        ];
-    }
-
-    public function getName(): string
+    public function name(): string
     {
         return 'cache';
     }
 
-    public function getWidgets(): array
+    public function record(string $type, string $key): void
     {
+        $this->totals[$type] = ($this->totals[$type] ?? 0) + 1;
+
+        if (count($this->operations) >= self::LIMIT) {
+            $this->dropped++;
+
+            return;
+        }
+
+        $this->operations[] = [
+            'type' => $type,
+            'key' => $key,
+            'time' => microtime(true),
+        ];
+    }
+
+    public function collect(ServerRequestInterface $request, ResponseInterface $response): array
+    {
+        $reads = $this->totals[self::HIT] + $this->totals[self::MISS];
+
         return [
-            'cache' => [
-                'icon' => 'server-cog',
-                'title' => 'Cache',
-                'widget' => 'PhpDebugBar.Widgets.MessagesWidget',
-                'map' => 'cache.messages',
-                'default' => '[]',
-            ],
-            'cache:badge' => [
-                'map' => 'cache.count',
-                'default' => 0,
-            ],
+            'count' => count($this->operations) + $this->dropped,
+            'dropped' => $this->dropped,
+            'totals' => $this->totals,
+            // Shown as a headline because a hit rate that has quietly fallen
+            // to nothing is the usual symptom of a misconfigured cache, and it
+            // is invisible in a list of individual operations.
+            'hitRate' => $reads > 0 ? $this->totals[self::HIT] / $reads : null,
+            'operations' => $this->operations,
         ];
     }
 }

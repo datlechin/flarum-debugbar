@@ -2,6 +2,11 @@
 composer.lock
 composer.phar
 
+# The extension had no frontend before, so this file had nothing to say about
+# one. `js/dist` is deliberately *not* ignored: Flarum extensions ship their
+# compiled bundles.
+node_modules
+
 .DS_Store
 Thumbs.db
 tests/.phpunit.cache

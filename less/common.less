@@ -1,0 +1,1073 @@
+// -----------------------------------------------------------------------------
+// The debug bar
+//
+// Every value here comes from Flarum's own tokens and mixins, and every pattern
+// is one core already uses somewhere:
+//
+//   the card          `.Composer` — Flarum's other bottom-docked panel: a card
+//                     on the page's container, rounded at the top, `--control-bg`
+//                     when minimized and `--body-bg` when open.
+//   the tab strip     `.Tabs-nav` as `SearchModal` uses it — text buttons, no
+//                     icons, the active one underlined in the primary colour.
+//   list rows         `.Dropdown-menu > li > a` — padding and hover, no rules.
+//                     Lines in Flarum separate *groups*, never rows.
+//   group headings    `.Dropdown-header` — uppercase 12px bold, ruled above.
+//   panel headers     `.HeaderList-header` — the strip above the notification
+//                     list, which is the same thing in the same place.
+//
+// Nothing here names a colour. That is what makes the bar follow the forum's
+// primary colour, colour scheme, dark mode and high-contrast modes without
+// knowing that any of them exist.
+// -----------------------------------------------------------------------------
+
+// The positioner: full width so the card can be centred on the page grid, but
+// transparent and click-through, exactly as `.App-composer` is.
+.DebugbarRoot {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: calc(var(--zindex-composer) - 1);
+  pointer-events: none;
+
+  > .container {
+    padding-inline: 15px;
+  }
+}
+
+.Debugbar {
+  pointer-events: auto;
+
+  // Anchors the resize handle, which sits on the card's own top edge.
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  // `.Composer`'s own surface treatment: shaded while it is out of the way,
+  // the page's own background once you are working in it.
+  background: var(--control-bg);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  box-shadow: 0 2px 6px var(--shadow-color);
+  color: var(--text-color);
+
+  &--open {
+    background: var(--body-bg);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// The header strip
+// -----------------------------------------------------------------------------
+
+.Debugbar-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 42px;
+  padding-inline: 8px;
+  min-width: 0;
+
+  // `Tabs-nav` sets `margin-bottom: -1px` so the active tab's underline sits on
+  // the container's own border rather than beside it. That border is this one.
+  .Debugbar--open & {
+    border-bottom: 1px solid var(--control-bg);
+  }
+}
+
+.Debugbar-toggle {
+  flex: 0 0 auto;
+
+  .Debugbar--open & {
+    --button-color: var(--primary-color);
+  }
+}
+
+.Debugbar-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  // Ten tabs still do not fit every window. Without the fade the tab at the
+  // edge is cut through the middle of its label, which reads as a rendering
+  // fault rather than as "there is more this way". The class is set only when
+  // the strip really is scrollable, so a wide window never dims its last tab
+  // for nothing.
+  &--overflowing {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+
+    [dir='rtl'] & {
+      mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+    }
+  }
+
+  // `Tabs-nav`'s own tabs are sized for a modal. The strip is 42px, so these
+  // are the same treatment at the height it allows.
+  > .Button {
+    flex: 0 0 auto;
+    font-size: 13px;
+    padding: 11px 10px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+}
+
+.Debugbar-tab {
+  &--warning {
+    --button-color: var(--control-warning-color);
+  }
+
+  &--error {
+    --button-color: var(--error-color);
+  }
+}
+
+.Debugbar-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-inline: 6px;
+
+  // Collapsed, the figures are the content of the row and take all of it.
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .Debugbar--open & {
+    flex: 0 0 auto;
+
+    // Open, the tabs own the row. Ten of them and the figures only both fit
+    // once the container reaches its widest band, so below that the figures
+    // stand down — they are a glance state, and the panels say the same
+    // things in more detail.
+    @media (max-width: (@screen-desktop-xl - 0.02)) {
+      display: none;
+    }
+  }
+}
+
+.Debugbar-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  color: var(--muted-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  .icon {
+    font-size: 11px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// The body
+// -----------------------------------------------------------------------------
+
+.Debugbar-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.Debugbar-panel,
+.DebugbarPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+// `HeaderList-header`: the strip above the notification list.
+.DebugbarPanel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--control-bg);
+}
+
+.DebugbarPanel-filter {
+  flex: 0 1 240px;
+
+  .FormControl {
+    height: 30px;
+    padding-block: 0;
+  }
+}
+
+.DebugbarPanel-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 0 12px;
+
+  // A panel's empty state is core's, so "no queries" reads like every other
+  // empty list in the forum.
+  > .Placeholder {
+    padding: 32px 0;
+  }
+}
+
+// The grab handle along the top edge. Two pixels of visible line is not a
+// target anyone can hit, so the hit area is padded out around it.
+.Debugbar-resizer {
+  position: absolute;
+  inset-inline: 0;
+  top: -3px;
+  height: 7px;
+
+  cursor: ns-resize;
+  touch-action: none;
+  background: transparent;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--primary-color);
+    outline: none;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Headline figures — core's `LabelValue`
+// -----------------------------------------------------------------------------
+
+.DebugbarStats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.DebugbarStats-item {
+  padding: 2px 8px;
+  border-radius: var(--border-radius);
+  font-size: 13px;
+  white-space: nowrap;
+
+  .LabelValue-label {
+    color: var(--muted-color);
+    font-weight: normal;
+  }
+
+  .LabelValue-value {
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--warning .LabelValue-value {
+    color: var(--control-warning-color);
+  }
+
+  &--error .LabelValue-value {
+    color: var(--error-color);
+  }
+
+  // A figure that is also a filter, in the same treatment `Dropdown-menu` gives
+  // its own items.
+  &.Button {
+    height: auto;
+
+    &:hover {
+      background: var(--control-bg);
+    }
+
+    &[active] {
+      background: var(--control-bg);
+
+      .LabelValue-label {
+        color: var(--text-color);
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Rows
+//
+// `padding` and `hover`, never a rule between them. This is the single change
+// that stops the panels reading as a spreadsheet: Flarum draws lines to divide
+// groups and leaves rows to whitespace.
+// -----------------------------------------------------------------------------
+
+.DebugbarList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.DebugbarRow() {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+
+  padding: 5px 15px;
+  line-height: 20px;
+}
+
+.DebugbarRow--interactive() {
+  .DebugbarRow();
+
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--control-bg);
+  }
+
+  .add-keyboard-focus-ring();
+}
+
+// -----------------------------------------------------------------------------
+// Shared pieces
+// -----------------------------------------------------------------------------
+
+.DebugbarBadge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--border-radius);
+
+  background: var(--control-bg-shaded);
+  color: var(--control-color);
+
+  font-size: 11px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &--warning {
+    background: var(--control-warning-bg);
+    color: var(--control-warning-color);
+  }
+}
+
+// `Button` wraps its children in `.Button-labelText`, so a tab's label and its
+// count are two inline spans inside that one element — the button's own `gap`
+// sits between the icon and the label and never reaches them. The space between
+// them has to be the badge's own margin.
+.Debugbar-tab .DebugbarBadge {
+  margin-inline-start: 7px;
+  background: var(--control-bg-shaded);
+}
+
+.Debugbar-tab[active] .DebugbarBadge {
+  color: var(--text-color);
+}
+
+.DebugbarStatus {
+  display: inline-block;
+  min-width: 34px;
+  padding: 1px 6px;
+  border-radius: var(--border-radius);
+
+  font-size: 11px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+
+  background: var(--control-bg-shaded);
+  color: var(--control-color);
+
+  &--success {
+    background: var(--control-success-bg);
+    color: var(--control-success-color);
+  }
+
+  &--info {
+    background: var(--control-bg-shaded);
+    color: var(--link-color);
+  }
+
+  &--warning {
+    background: var(--control-warning-bg);
+    color: var(--control-warning-color);
+  }
+
+  &--error {
+    background: var(--control-danger-bg);
+    color: var(--control-danger-color);
+  }
+}
+
+.DebugbarCode {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--border-radius);
+
+  background: var(--code-bg);
+  color: var(--code-color);
+
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+// Inline code inside a row: the row already has a surface, so a second one just
+// makes the line noisy.
+.DebugbarInline() {
+  padding: 0;
+  background: none;
+  color: var(--code-color);
+  font-size: 12px;
+}
+
+.Debugbar-truncated {
+  margin: 8px 15px 0;
+  color: var(--muted-color);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.Debugbar-empty {
+  margin: 0;
+  color: var(--muted-color);
+}
+
+// The muted, right-aligned figure at the end of a row. Tabular so a column of
+// them lines up on the decimal point.
+.DebugbarFigure() {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  color: var(--muted-color);
+  font-variant-numeric: tabular-nums;
+}
+
+// The offset from the start of the request, at the head of a row.
+.DebugbarOffset() {
+  flex: 0 0 62px;
+  color: var(--muted-more-color);
+  font-variant-numeric: tabular-nums;
+}
+
+// -----------------------------------------------------------------------------
+// Sections
+// -----------------------------------------------------------------------------
+
+.DebugbarSections {
+  display: flex;
+  flex-direction: column;
+
+  // Short lists — environment, request — would leave most of a wide bar empty
+  // in one column. Columns pack them by height, so a three-row group beside an
+  // eight-row one wastes nothing, and `break-inside` keeps each group whole.
+  &--columns {
+    @media @tablet-up {
+      display: block;
+      column-count: 2;
+      column-gap: 40px;
+      padding-inline: 15px;
+    }
+
+    @media @desktop-hd {
+      column-count: 3;
+    }
+
+    .DebugbarSection {
+      padding-inline: 0;
+    }
+  }
+}
+
+.DebugbarSection {
+  min-width: 0;
+  break-inside: avoid;
+  display: flow-root;
+  padding-inline: 15px;
+  margin-bottom: 8px;
+}
+
+// `Dropdown-header`'s voice, applied to a real heading rather than borrowing
+// the class and its padding, `white-space: nowrap` and top border with it.
+.DebugbarSection-title {
+  margin: 10px 0 4px;
+
+  color: var(--heading-color);
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.DebugbarSection-note {
+  margin: 0 0 6px;
+  color: var(--muted-color);
+  font-size: 12px;
+}
+
+// -----------------------------------------------------------------------------
+// Key/value lists
+// -----------------------------------------------------------------------------
+
+.DebugbarKeyValue {
+  margin: 0;
+}
+
+.DebugbarKeyValue-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+// A third of the row, but never so wide that a label and its value stop reading
+// as a pair: at 1200px an unbounded third puts half a screen between "Method"
+// and "GET".
+.DebugbarKeyValue-key {
+  flex: 0 0 clamp(110px, 34%, 200px);
+  min-width: 0;
+  color: var(--muted-color);
+  word-break: break-word;
+}
+
+.DebugbarKeyValue-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  word-break: break-word;
+
+  code {
+    .DebugbarInline();
+  }
+}
+
+.DebugbarKeyValue-blank {
+  color: var(--muted-more-color);
+  font-style: italic;
+}
+
+// -----------------------------------------------------------------------------
+// Tables
+// -----------------------------------------------------------------------------
+
+.DebugbarTable {
+  .Table();
+
+  width: 100%;
+  font-size: 12px;
+
+  td,
+  th {
+    padding: 6px 10px;
+    // `.Table()` centres header cells, which suits a grid of checkbox columns.
+    // These are columns of prose and identifiers, so they read from the start
+    // edge — and so must the row headers, which would otherwise keep the
+    // browser's centred default for `th`.
+    text-align: start;
+    vertical-align: top;
+  }
+
+  thead th {
+    padding: 8px 10px;
+    text-align: start;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: var(--muted-color);
+  }
+
+  th[scope='row'] {
+    font-weight: normal;
+  }
+
+  code {
+    .DebugbarInline();
+    word-break: break-all;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Timeline
+// -----------------------------------------------------------------------------
+
+.DebugbarTimeline-list {
+  .DebugbarList();
+}
+
+.DebugbarTimeline-item {
+  .DebugbarRow();
+
+  align-items: center;
+  gap: 14px;
+}
+
+.DebugbarTimeline-label {
+  flex: 0 0 clamp(140px, 26%, 260px);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DebugbarTimeline-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 10px;
+  border-radius: var(--border-radius);
+  background: var(--control-bg);
+}
+
+.DebugbarTimeline-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--border-radius);
+  background: var(--primary-color);
+  min-width: 2px;
+
+  // A span that never closed has no real end, so it is drawn as an estimate
+  // rather than as a measurement.
+  &--unfinished {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--control-warning-color),
+      var(--control-warning-color) 4px,
+      var(--control-warning-bg) 4px,
+      var(--control-warning-bg) 8px
+    );
+  }
+}
+
+.DebugbarTimeline-duration {
+  .DebugbarFigure();
+
+  min-width: 72px;
+  text-align: end;
+}
+
+.DebugbarTimeline-unfinished {
+  color: var(--control-warning-color);
+}
+
+// -----------------------------------------------------------------------------
+// Queries
+// -----------------------------------------------------------------------------
+
+.DebugbarQueries-list,
+.DebugbarMessages-list,
+.DebugbarEvents-list,
+.DebugbarCache-list,
+.DebugbarMail-list {
+  .DebugbarList();
+}
+
+// A repeated statement is marked by its `×n` badge and nothing else. Colouring
+// the statement too meant a third of the panel was orange, which is loud enough
+// to be the first thing you see and vague enough not to tell you anything the
+// badge does not — and the "Duplicates" figure above is already the control for
+// finding them.
+.DebugbarQuery-summary {
+  .DebugbarRow--interactive();
+}
+
+.DebugbarQuery-caret {
+  flex: 0 0 10px;
+  color: var(--muted-more-color);
+  font-size: 11px;
+}
+
+.DebugbarQuery-sql {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .DebugbarInline();
+
+  // Collapsed rows are for scanning, so each is one line however long the
+  // statement is; the whole thing is a click away.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DebugbarQuery-duration {
+  .DebugbarFigure();
+}
+
+.DebugbarQuery-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 15px 14px 25px;
+}
+
+.DebugbarQuery-detailTitle {
+  margin: 0 0 4px;
+  color: var(--muted-color);
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.DebugbarQuery-bindings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  > li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 2px 8px;
+    border-radius: var(--border-radius);
+    background: var(--code-bg);
+
+    code {
+      .DebugbarInline();
+    }
+  }
+}
+
+.DebugbarQuery-bindingIndex {
+  color: var(--muted-more-color);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.DebugbarQuery-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: var(--muted-color);
+  font-size: 12px;
+
+  code {
+    .DebugbarInline();
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+// The level is carried by its own chip, not by the colour of the message.
+// A chip is five characters and says exactly one thing; a whole sentence set
+// in orange on white is harder to read and says the same thing less precisely.
+.DebugbarMessage {
+  padding-block: 2px;
+
+  &--warning .DebugbarBadge {
+    background: var(--control-warning-bg);
+    color: var(--control-warning-color);
+  }
+
+  &--error .DebugbarBadge {
+    background: var(--control-danger-bg);
+    color: var(--control-danger-color);
+  }
+}
+
+.DebugbarMessage-level {
+  flex: 0 0 auto;
+  min-width: 54px;
+  text-align: center;
+}
+
+.DebugbarMessage-head {
+  .DebugbarRow();
+}
+
+.DebugbarMessage-offset,
+.DebugbarEvent-offset,
+.DebugbarCacheOp-offset {
+  .DebugbarOffset();
+}
+
+.DebugbarMessage-text {
+  min-width: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.DebugbarMessage-origin {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 0 15px 2px 141px;
+
+  code {
+    .DebugbarInline();
+    color: var(--muted-color);
+    font-size: 11px;
+  }
+}
+
+// Set apart from the path it follows: run together they read as one string.
+.DebugbarMessage-traceToggle {
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 11px;
+}
+
+.DebugbarMessage-trace {
+  margin: 4px 15px 8px 141px;
+  font-size: 11px;
+}
+
+// -----------------------------------------------------------------------------
+// Events
+// -----------------------------------------------------------------------------
+
+.DebugbarEvent {
+  .DebugbarRow();
+}
+
+.DebugbarEvent-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  .DebugbarInline();
+  word-break: break-all;
+}
+
+.DebugbarEvent-payload {
+  flex: 0 1 auto;
+  color: var(--muted-more-color);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DebugbarEvents-collapsed {
+  margin-top: 12px;
+}
+
+.DebugbarEvents-collapsedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  > li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 2px 8px;
+    border-radius: var(--border-radius);
+    background: var(--control-bg);
+
+    code {
+      .DebugbarInline();
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Cache
+// -----------------------------------------------------------------------------
+
+.DebugbarCacheOp {
+  .DebugbarRow();
+
+  &--miss .DebugbarBadge {
+    background: var(--control-warning-bg);
+    color: var(--control-warning-color);
+  }
+
+  &--flush .DebugbarBadge {
+    background: var(--control-danger-bg);
+    color: var(--control-danger-color);
+  }
+}
+
+.DebugbarCacheOp-key {
+  flex: 1 1 auto;
+  min-width: 0;
+  .DebugbarInline();
+  word-break: break-all;
+}
+
+// -----------------------------------------------------------------------------
+// Mail
+// -----------------------------------------------------------------------------
+
+.DebugbarMailMessage-head {
+  .DebugbarRow();
+}
+
+.DebugbarMailMessage-subject {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DebugbarMailMessage-to {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DebugbarMailMessage-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 15px 12px;
+}
+
+.DebugbarMailMessage-body {
+  max-height: 320px;
+  overflow: auto;
+}
+
+// -----------------------------------------------------------------------------
+// Settings and extensions
+// -----------------------------------------------------------------------------
+
+.DebugbarSettings-redacted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-color);
+
+  .icon {
+    font-size: 10px;
+  }
+}
+
+.DebugbarExtensions-row--disabled {
+  color: var(--muted-more-color);
+}
+
+.DebugbarExtensions-state {
+  margin-inline-end: 6px;
+  color: var(--muted-more-color);
+  font-size: 11px;
+
+  &--on {
+    color: var(--control-success-color);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// The request picker
+// -----------------------------------------------------------------------------
+
+// The rows themselves are core's `DetailedDropdownItem`, so all that is left
+// here is the width of the menu and the colour of the status dot.
+.DebugbarRequests {
+  flex: 0 0 auto;
+
+  &-button {
+    max-width: 260px;
+  }
+
+  // The status band, in the 25px icon column `DetailedDropdownItem` provides.
+  // A dot rather than a number because it has to be findable, not read: you
+  // scan a list of twenty requests for the one that is not green.
+  &-dot {
+    font-size: 8px;
+    color: var(--muted-more-color);
+
+    &--success {
+      color: var(--control-success-color);
+    }
+
+    &--info {
+      color: var(--link-color);
+    }
+
+    &--warning {
+      color: var(--control-warning-color);
+    }
+
+    &--error {
+      color: var(--error-color);
+    }
+  }
+
+  .Dropdown-menu {
+    min-width: 320px;
+    max-width: 90vw;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Phone
+// -----------------------------------------------------------------------------
+
+@media @phone {
+  // A card with rounded corners and side margins wastes width a phone does not
+  // have, so on a phone the bar spans the screen — which is what the composer
+  // does too.
+  .DebugbarRoot > .container {
+    padding-inline: 0;
+    width: 100%;
+  }
+
+  .Debugbar {
+    border-radius: 0;
+  }
+
+  .DebugbarPanel-header {
+    padding-inline: 12px;
+  }
+
+  .DebugbarSection,
+  .DebugbarTimeline-item,
+  .DebugbarQuery-summary,
+  .DebugbarMessage-head,
+  .DebugbarEvent,
+  .DebugbarCacheOp,
+  .DebugbarMailMessage-head {
+    padding-inline: 12px;
+  }
+
+  .DebugbarTimeline-label {
+    flex-basis: 40%;
+  }
+
+  // On a phone the picker's label costs more width than it earns: the tab
+  // strip is the row's content, and the clock icon says what the control is.
+  // The accessible name comes from the toggle's own label either way.
+  .DebugbarRequests-button .Button-label {
+    .visually-hidden();
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Keeping the bottom of the page reachable
+//
+// The bar is fixed to the viewport, so without this it covers the last few
+// hundred pixels of every page — including, on a discussion, the reply control.
+// `--debugbar-offset` is the bar's measured height, set by the component; the
+// fallback keeps these harmless on any page without one.
+// -----------------------------------------------------------------------------
+
+body {
+  padding-bottom: var(--debugbar-offset, 0);
+}
+
+@media @tablet-up {
+  .App-composer {
+    bottom: var(--debugbar-offset, 0);
+  }
+}

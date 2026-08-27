@@ -1,111 +1,146 @@
 <?php
 
+/*
+ * This file is part of datlechin/flarum-debugbar.
+ *
+ * Copyright (c) 2026 Ngo Quoc Dat.
+ *
+ * For the full copyright and license information, please view the LICENSE.md
+ * file that was distributed with this source code.
+ */
+
 namespace Datlechin\FlarumDebugbar\Collector;
 
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
+use Illuminate\Contracts\Events\Dispatcher;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-class EventCollector extends DataCollector implements Renderable
+/**
+ * Every event dispatched during the request, in order.
+ *
+ * Two families are counted rather than listed. Eloquent's model events fire
+ * several hundred times on a page that loads fifty discussions, and the
+ * database's own events fire twice for every query — between them they bury
+ * the one event anyone opened the panel to find. Neither is lost: the totals
+ * are reported, and the Queries panel is the detailed view of the database
+ * ones.
+ */
+class EventCollector implements CollectorInterface, SubscribesToEvents
 {
-    protected const MAX_ENTRIES = 500;
+    protected const LIMIT = 400;
 
+    /**
+     * Prefixes of the event families that are counted rather than listed.
+     */
+    protected const NOISE = [
+        'eloquent.',
+        'Illuminate\\Database\\Events\\',
+    ];
+
+    /**
+     * @var list<array<string, mixed>>
+     */
     protected array $events = [];
 
-    public function onWildcardEvent(string $eventName, array $payload): void
-    {
-        $this->events[] = [
-            'event' => $eventName,
-            'time' => microtime(true),
-            'payload_count' => count($payload),
-        ];
-    }
+    /**
+     * @var array<string, int>
+     */
+    protected array $collapsed = [];
 
-    public function collect(): array
-    {
-        $totalCount = count($this->events);
-        $events = $this->events;
-        $truncated = 0;
+    protected int $count = 0;
 
-        if ($totalCount > self::MAX_ENTRIES) {
-            $truncated = $totalCount - self::MAX_ENTRIES;
-            $events = array_slice($events, 0, self::MAX_ENTRIES);
-        }
+    protected int $dropped = 0;
 
-        // Collapse eloquent events into a single summary entry
-        $eloquentCount = 0;
-        $filtered = [];
-
-        foreach ($events as $event) {
-            if (str_contains($event['event'], 'eloquent.')) {
-                $eloquentCount++;
-            } else {
-                $filtered[] = $event;
-            }
-        }
-
-        $messages = [];
-
-        if ($eloquentCount > 0) {
-            $messages[] = [
-                'message' => "eloquent.* ({$eloquentCount} events collapsed)",
-                'message_html' => null,
-                'is_string' => true,
-                'label' => 'debug',
-                'time' => $events[0]['time'],
-            ];
-        }
-
-        foreach ($filtered as $event) {
-            $label = 'info';
-
-            if (str_contains($event['event'], 'Exception') || str_contains($event['event'], 'Error')) {
-                $label = 'error';
-            }
-
-            $messages[] = [
-                'message' => $event['event'],
-                'message_html' => null,
-                'is_string' => true,
-                'label' => $label,
-                'time' => $event['time'],
-            ];
-        }
-
-        if ($truncated > 0) {
-            $messages[] = [
-                'message' => "... {$truncated} more events truncated (cap: " . self::MAX_ENTRIES . ")",
-                'message_html' => null,
-                'is_string' => true,
-                'label' => 'warning',
-                'time' => microtime(true),
-            ];
-        }
-
-        return [
-            'count' => $totalCount,
-            'messages' => $messages,
-        ];
-    }
-
-    public function getName(): string
+    public function name(): string
     {
         return 'events';
     }
 
-    public function getWidgets(): array
+    public function subscribe(Dispatcher $events): void
     {
-        return [
-            'events' => [
-                'icon' => 'bolt',
-                'title' => 'Events',
-                'widget' => 'PhpDebugBar.Widgets.MessagesWidget',
-                'map' => 'events.messages',
-                'default' => '[]',
-            ],
-            'events:badge' => [
-                'map' => 'events.count',
-                'default' => 0,
-            ],
+        $events->listen('*', $this->record(...));
+    }
+
+    /**
+     * @param array<array-key, mixed> $payload
+     */
+    public function record(string $name, array $payload): void
+    {
+        $this->count++;
+
+        if ($this->isNoise($name)) {
+            $this->collapsed[$this->family($name)] = ($this->collapsed[$this->family($name)] ?? 0) + 1;
+
+            return;
+        }
+
+        if (count($this->events) >= self::LIMIT) {
+            $this->dropped++;
+
+            return;
+        }
+
+        $this->events[] = [
+            'name' => $name,
+            'time' => microtime(true),
+            'payload' => $this->describePayload($name, $payload),
         ];
+    }
+
+    /**
+     * The types the event carried, minus the event itself.
+     *
+     * A class-based event is dispatched with the event object as its only
+     * payload, so its type *is* the event's name — reporting it produced a
+     * column that repeated the one beside it, word for word, on every row.
+     *
+     * @param array<array-key, mixed> $payload
+     * @return list<string>
+     */
+    protected function describePayload(string $name, array $payload): array
+    {
+        $types = array_map(get_debug_type(...), $payload);
+
+        return array_values(array_filter($types, fn (string $type) => $type !== $name));
+    }
+
+    public function collect(ServerRequestInterface $request, ResponseInterface $response): array
+    {
+        $collapsed = [];
+
+        foreach ($this->collapsed as $name => $count) {
+            $collapsed[] = ['name' => $name, 'count' => $count];
+        }
+
+        usort($collapsed, fn (array $a, array $b) => $b['count'] <=> $a['count']);
+
+        return [
+            'count' => $this->count,
+            'dropped' => $this->dropped,
+            'events' => $this->events,
+            'collapsed' => $collapsed,
+        ];
+    }
+
+    protected function isNoise(string $name): bool
+    {
+        foreach (self::NOISE as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * `eloquent.retrieved: Flarum\User\User` and
+     * `eloquent.retrieved: Flarum\Post\Post` are the same kind of noise, so
+     * they are counted together. A class-based event is already its own
+     * family.
+     */
+    protected function family(string $name): string
+    {
+        return str_contains($name, ':') ? strstr($name, ':', true).': *' : $name;
     }
 }
